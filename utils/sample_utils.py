@@ -154,7 +154,9 @@ def SampleFromSurfaceOld(vertices, faces, face_normal, face_area, face_selected,
 
     return sampled_points
 
-def SampleFromSurface(vertices, faces, face_area, face_selected, num_sampled_points, var):
+def SampleFromSurface(vertices, faces, face_area, face_selected, num_sampled_points, var, symmetric=True):
+    if symmetric:
+        num_sampled_points = int(num_sampled_points / 2)
     # Generate random values u and v
     u = np.random.rand(num_sampled_points, 1)
     v = np.random.rand(num_sampled_points, 1)
@@ -176,9 +178,13 @@ def SampleFromSurface(vertices, faces, face_area, face_selected, num_sampled_poi
     v2 = vertices[faces[sample_face_idxs, 2], :]
     surface_points = v0 * w0 + v1 * w1 + v2 * w2
 
-    noise = np.random.normal(0, var**0.5, (num_sampled_points, 3))
-        
-    sampled_points = surface_points + noise
+    if symmetric:
+        noise1 = np.random.normal(0, var**0.5, (num_sampled_points, 3))
+        noise2 = np.random.normal(0, var**0.5, (num_sampled_points, 3))
+        sampled_points = np.vstack((surface_points + noise1, surface_points + noise2))
+    else:
+        noise = np.random.normal(0, var**0.5, (num_sampled_points, 3))    
+        sampled_points = surface_points + noise
         
     return sampled_points
 

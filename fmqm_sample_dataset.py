@@ -43,7 +43,7 @@ os.makedirs(topology_root, exist_ok=True)
 
 sampleDirection = "uniform"
 noiseVar = (0.01 * args.noise_level)**2
-sample_root = os.path.join(result_root, "SDFU{:.2f}_{:03d}_{:06d}".format(args.noise_level, args.lp_number, args.point_number))
+sample_root = os.path.join(result_root, "SDFU{:.2f}_{:03d}_{:06d}_1".format(args.noise_level, args.lp_number, args.point_number))
 os.makedirs(sample_root, exist_ok=True) 
 num_samp_near_surf_ratio = 1
 
@@ -183,7 +183,7 @@ for index, row in df.iterrows():
             refMesh.vertices = o3d.utility.Vector3dVector(scaledRefV)
 
             # Visualize the mesh and sampled points
-            num_samp_near_surf = int(num_samp_near_surf_ratio * localSampleNumber)
+            num_samp_near_surf = int(num_samp_near_surf_ratio * localSampleNumber) // 2 * 2
             surfSamples = SampleFromSurface(scaledRefV, refF, faceArea, fSelected, num_samp_near_surf, noiseVar)
             randSamples = SampleFromBoundingCube(localSampleNumber - num_samp_near_surf, 1)
 
