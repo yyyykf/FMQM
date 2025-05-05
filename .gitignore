@@ -1,5 +1,6 @@
 ./datasetInfo/pathsTSMD.csv
 ./datasetInfo/pathsSJTUMQA.csv
 ./datasetInfo/pathsYANA.csv
-./sampleResults/*
+./sampleResults
+./utils/__pycache__
 generate_raw_info.py
