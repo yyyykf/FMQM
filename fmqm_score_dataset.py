@@ -12,7 +12,7 @@ from tqdm import tqdm
 # python fmqm_score_dataset.py --dataset=yana
 
 parser = argparse.ArgumentParser(description="FMQM calculate scores")
-parser.add_argument("--dataset", type=str, choices=["tsmd", "sjtumqa", "yana"], default="tsmd", 
+parser.add_argument("--dataset", type=str, choices=["tsmd", "sjtumqa", "yana"], default="sjtumqa", 
                     help="Target dataset name: choose from tsmd, sjtumqa, yana")
 parser.add_argument("--sample_dir_name", type=str, default="SDFU5.00_250_200000", help="sample dir name")
 args = parser.parse_args()

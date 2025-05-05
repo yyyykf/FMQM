@@ -260,9 +260,9 @@ def calculateSDFFeatures(localRefSDFInfo, localDisSDFInfo, tangentThreLevel,
     feature_geo_grad = sdfGradientAngle
     feature_color = colorSSIM
     feature_color_grad = (colorGradientDiff[0] * colorGradientDiff[1]) ** (1/2)
-    if sdfSSIM == 1:
-        feature_fused = (feature_color * feature_color_grad) ** (1/2)
-    else:
+    if sdfSSIM < 1:
         feature_fused = (feature_geo * feature_geo_grad * feature_color * feature_color_grad) ** (1/4)
+    else:
+        feature_fused = (feature_color * feature_color_grad) ** (1/2)
     localFeature = np.hstack((feature_geo, feature_geo_grad, feature_color, feature_color_grad, feature_fused))
     return localFeature
