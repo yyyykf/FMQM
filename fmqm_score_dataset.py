@@ -71,6 +71,6 @@ for index, row in df.iterrows():
     globalFeatures[index, :] = np.mean(localFeatures, axis=0)
     print(f"finish {index} / {numberObjs}")
     
-matFile = os.path.join(result_root, f"{dataset}_{args.sample_dir_name}.csv")
+matFile = os.path.join(result_root, f"{dataset}_{args.sample_dir_name}.mat")
 savemat(matFile, {f'{dataset}': globalFeatures})
 print("save to {}".format(matFile))
