@@ -1,5 +1,5 @@
 import numpy as np
-
+import open3d as o3d
 
 def farthest_point_sample(pointCloud, numPointsToSample):
     numPoints = pointCloud.shape[0]
@@ -188,8 +188,44 @@ def SampleFromSurface(vertices, faces, face_area, face_selected, num_sampled_poi
         
     return sampled_points
 
+def SampleToPC(vertices, faces, face_normal, faces_uv, mesh_texture, face_area, face_selected, num_sampled_points):
+    # Generate random values u and v
+    u = np.random.rand(num_sampled_points, 1)
+    v = np.random.rand(num_sampled_points, 1)
 
-def SampleFromBoundingCube(num_rand_points, cube_length = 1):
+    # Calculate barycentric coordinates w0, w1, and w2
+    w0 = 1 - np.sqrt(u)
+    w1 = np.sqrt(u) * (1 - v)
+    w2 = np.sqrt(u) * v
+
+    # Calculate probabilities for face sampling
+    probabilities = face_area[face_selected] / np.sum(face_area[face_selected])
+
+    # Sample face indices using the probability distribution
+    sample_face_idxs = np.random.choice(face_selected, num_sampled_points, p=probabilities)
+
+    # Calculate sample points
+    v0 = vertices[faces[sample_face_idxs, 0], :]
+    v1 = vertices[faces[sample_face_idxs, 1], :]
+    v2 = vertices[faces[sample_face_idxs, 2], :]
+    surface_points = v0 * w0 + v1 * w1 + v2 * w2
+    surface_normal = face_normal[sample_face_idxs, :]
+
+    textureTriUVs = faces_uv[sample_face_idxs, :, :]
+    pointUVs = textureTriUVs[:, 0, :].reshape(num_sampled_points, 2) * w0 + \
+               textureTriUVs[:, 1, :].reshape(num_sampled_points, 2) * w1 + \
+               textureTriUVs[:, 2, :].reshape(num_sampled_points, 2) * w2
+
+    surface_points_color = compute_rgb_at_uv(pointUVs, mesh_texture, True)
+
+    point_cloud = o3d.geometry.PointCloud()
+    point_cloud.points = o3d.utility.Vector3dVector(surface_points)
+    point_cloud.colors = o3d.utility.Vector3dVector(surface_points_color / 255)
+    # point_cloud.normals = o3d.utility.Vector3dVector(surface_normal)
+    return point_cloud
+
+
+def SampleFromCube(num_rand_points, cube_length = 1):
     sampled_points = np.random.uniform(-cube_length / 2, cube_length / 2, (num_rand_points, 3))
     return sampled_points
 
@@ -226,3 +262,81 @@ def compute_vertex_to_face(vertices, triangles):
             vertex_to_faces[vertex_id].add(i)
 
     return vertex_to_faces
+
+def SampleFromBoundingSphere(center, radius, numSamples):
+    """
+    Sample points uniformly from a bounding sphere.
+
+    Args:
+        center (np.ndarray): Center of the sphere.
+        radius (float): Radius of the sphere.
+        numSamples (int): Number of samples to generate.
+
+    Returns:
+        np.ndarray: Sampled points in shape (numSamples, 3).
+    """
+    assert len(center) == 3, "Center must be a 3D point."
+    assert radius > 0, "Radius must be positive."
+
+    points = np.random.normal(size=(numSamples, 3))
+    points /= np.linalg.norm(points, axis=1)[:, np.newaxis]  # Normalize to unit sphere
+    points *= radius  # Scale to the desired radius
+    points += center  # Translate to the center
+
+    return points
+
+def SampleFromAABBSurface(min_bound, max_bound, numSamples):
+    """
+    Uniformly sample points from the surface of an axis-aligned bounding box (AABB).
+    
+    Args:
+        min_bound (np.ndarray): 3D coordinate of the minimum corner (shape: (3,))
+        max_bound (np.ndarray): 3D coordinate of the maximum corner (shape: (3,))
+        numSamples (int): Number of points to sample.
+        
+    Returns:
+        np.ndarray: Sampled points on the surface, shape (numSamples, 3)
+    """
+    min_bound = np.asarray(min_bound).reshape(3)
+    max_bound = np.asarray(max_bound).reshape(3)
+    
+    assert np.all(max_bound > min_bound), "max_bound must be greater than min_bound in all dimensions"
+    
+    # Box dimensions
+    x0, y0, z0 = min_bound
+    x1, y1, z1 = max_bound
+    dx, dy, dz = x1 - x0, y1 - y0, z1 - z0
+
+    # Surface areas of the 6 faces
+    areas = np.array([
+        dy * dz,  # x-min or x-max face
+        dy * dz,
+        dx * dz,  # y-min or y-max face
+        dx * dz,
+        dx * dy,  # z-min or z-max face
+        dx * dy
+    ])
+    face_probs = areas / np.sum(areas)
+
+    # Choose face index for each sample
+    face_indices = np.random.choice(6, size=numSamples, p=face_probs)
+
+    samples = np.zeros((numSamples, 3))
+    for i, face in enumerate(face_indices):
+        u = np.random.rand()
+        v = np.random.rand()
+
+        if face == 0:  # x = x0
+            samples[i] = [x0, y0 + u * dy, z0 + v * dz]
+        elif face == 1:  # x = x1
+            samples[i] = [x1, y0 + u * dy, z0 + v * dz]
+        elif face == 2:  # y = y0
+            samples[i] = [x0 + u * dx, y0, z0 + v * dz]
+        elif face == 3:  # y = y1
+            samples[i] = [x0 + u * dx, y1, z0 + v * dz]
+        elif face == 4:  # z = z0
+            samples[i] = [x0 + u * dx, y0 + v * dy, z0]
+        elif face == 5:  # z = z1
+            samples[i] = [x0 + u * dx, y0 + v * dy, z1]
+
+    return samples

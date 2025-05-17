@@ -96,9 +96,9 @@ def main(tsmd_root, sjtumqa_root, yana_root):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--tsmd", default="/home/old/yangkaifa/dataset/tsmd", help="Path to TSMD dataset root")
-    parser.add_argument("--sjtumqa", default="/home/old/yangkaifa/dataset/SJTU-MQA", help="Path to SJTU-MQA dataset root")
-    parser.add_argument("--yana", default="/home/old/yangkaifa/dataset/yana2022/subset3000", help="Path to YANA dataset root")
+    parser.add_argument("--tsmd", required=True, help="Path to TSMD dataset root")
+    parser.add_argument("--sjtumqa", required=True, help="Path to SJTU-MQA dataset root")
+    parser.add_argument("--yana", required=True, help="Path to YANA dataset root")
     args = parser.parse_args()
     
     main(args.tsmd, args.sjtumqa, args.yana)

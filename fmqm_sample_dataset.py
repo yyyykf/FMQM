@@ -8,13 +8,8 @@ import argparse
 from scipy.io import savemat, loadmat
 from tqdm import tqdm
 
-# conda activate sdfqa
-# python fmqm_sample_dataset.py --dataset=tsmd
-# python fmqm_sample_dataset.py --dataset=sjtumqa
-# python fmqm_sample_dataset.py --dataset=yana
-
 parser = argparse.ArgumentParser(description="FMQM sample datasets")
-parser.add_argument("--dataset", type=str, choices=["tsmd", "sjtumqa", "yana"], default="tsmd", 
+parser.add_argument("--dataset", type=str, choices=["tsmd", "sjtumqa", "yana"], required=True,
                     help="Target dataset name: choose from tsmd, sjtumqa, yana")
 parser.add_argument("--noise_level", type=float, default=5, help="Noise level: noise variance = (noise_level * 0.01)^2")
 parser.add_argument("--point_number", type=int, default=200000, help="Number of total points")
@@ -38,12 +33,12 @@ localMinRatio = 1 / numberFPS
 localMaxRatio = localMinRatio * 1.1
 maxRings = 200
 
-topology_root = os.path.join(result_root, "topology", "topology_{:03d}".format(numberFPS))
+topology_root = os.path.join(result_root, "topology", f"topology_{numberFPS:03d}_{args.sample_mode}")
 os.makedirs(topology_root, exist_ok=True)
 
 sampleDirection = "uniform"
 noiseVar = (0.01 * args.noise_level)**2
-sample_root = os.path.join(result_root, "SDFU{:.2f}_{:03d}_{:06d}_1".format(args.noise_level, args.lp_number, args.point_number))
+sample_root = os.path.join(result_root, f"SDFU{args.noise_level:.2f}_{args.lp_number:03d}_{ args.point_number:06d}")
 os.makedirs(sample_root, exist_ok=True) 
 num_samp_near_surf_ratio = 1
 
@@ -98,7 +93,10 @@ for index, row in df.iterrows():
         vertexToFace = compute_vertex_to_face(refV, refF)
 
         total_fps = numberFPS
-        fps_idx = farthest_point_sample(refV, total_fps)
+        if args.sample_mode == "fps":
+            fps_idx = farthest_point_sample(refV, total_fps)
+        else:
+            fps_idx = np.random.choice(refV.shape[0], size=total_fps, replace=False)
         local_numbers = fps_idx.shape[0]
 
         sampledBbox = np.zeros((local_numbers, 4))
@@ -185,7 +183,7 @@ for index, row in df.iterrows():
             # Visualize the mesh and sampled points
             num_samp_near_surf = int(num_samp_near_surf_ratio * localSampleNumber) // 2 * 2
             surfSamples = SampleFromSurface(scaledRefV, refF, faceArea, fSelected, num_samp_near_surf, noiseVar)
-            randSamples = SampleFromBoundingCube(localSampleNumber - num_samp_near_surf, 1)
+            randSamples = SampleFromCube(localSampleNumber - num_samp_near_surf, 1)
 
             totalSamples = np.vstack((surfSamples, randSamples))
             totalSamples = totalSamples.astype(np.float32)
@@ -213,10 +211,11 @@ for index, row in df.iterrows():
             refIntersectionPoints = refIntersectionInfo['points'].numpy()
             refIntersectionColors = compute_rgb_at_uv(refIntersectionTextureUVs, refTexture, True)
 
-            # samplePointXYZ NerghborhoodPointXYZ RGB normal SDF 
+            # samplePointXYZ 3 NerghborhoodPointXYZ 3 RGB 3 normal 3 SDF 1 localPatchIdx 1
             sdfSamplesWithColor = np.hstack(
                 (totalSamples, refIntersectionPoints, refIntersectionColors, refIntersectionNormals, refD.reshape(-1, 1), idx * np.ones((localSampleNumber, 1))))
             sampledValues = np.append(sampledValues, sdfSamplesWithColor)
+            # local patch bbox center and diagonal
             sampledBbox[idx, :] = np.hstack((box_center, box_diagonal))
 
         if not topoloy_file_exist:

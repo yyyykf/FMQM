@@ -6,11 +6,6 @@ import argparse
 from scipy.io import savemat, loadmat
 from tqdm import tqdm
 
-# conda activate sdfqa
-# python fmqm_score_dataset.py --dataset=tsmd
-# python fmqm_score_dataset.py --dataset=sjtumqa
-# python fmqm_score_dataset.py --dataset=yana
-
 parser = argparse.ArgumentParser(description="FMQM calculate scores")
 parser.add_argument("--dataset", type=str, choices=["tsmd", "sjtumqa", "yana"], default="tsmd", 
                     help="Target dataset name: choose from tsmd, sjtumqa, yana")
@@ -69,8 +64,8 @@ for index, row in df.iterrows():
         localDisSDFInfo = disSDFInfo[disSDFInfo[:, 13] == idx]
         localFeatures[ii, :] = calculateSDFFeatures(localRefSDFInfo, localDisSDFInfo, tangentThreLevel, normalThreLevel, tangentPlaneLevel, radius_level * 0.1)
     globalFeatures[index, :] = np.mean(localFeatures, axis=0)
-    print(f"finish {index} / {numberObjs}")
+    print(f"finish {index+1} / {numberObjs}")
     
-matFile = os.path.join(result_root, f"{dataset}_{args.sample_dir_name}.csv")
+matFile = os.path.join(result_root, f"{dataset}_{args.sample_dir_name}.mat")
 savemat(matFile, {f'{dataset}': globalFeatures})
 print("save to {}".format(matFile))

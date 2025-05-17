@@ -4,3 +4,7 @@ datasetInfo/pathsYANA.csv
 sampleResults/
 utils/__pycache__/
 generate_raw_info.py
+visualize_whole_mesh_TN.py
+visualize_ncf_render.py
+visualize_ncf_global.py
+.idea/
